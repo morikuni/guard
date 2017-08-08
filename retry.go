@@ -11,16 +11,18 @@ func Retry(n int, backoffStrategy BackoffStrategy) Guard {
 
 		var err error
 		for i := 0; i <= n; i++ {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			default:
+			if i > 0 {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.NewTimer(backoff.NextInterval()).C:
+				}
 			}
+
 			err = f(ctx)
 			if err == nil {
 				return nil
 			}
-			time.Sleep(backoff.NextInterval())
 		}
 		return err
 	})
