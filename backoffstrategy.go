@@ -43,10 +43,10 @@ func (n noBackoff) Reset() BackoffStrategy {
 
 func ExponentialBackoff(options ...ExponentialBackoffOption) BackoffStrategy {
 	e := &exponentialBackoff{
-		initialInterval:     float64(time.Second),
+		initialInterval:     float64(200 * time.Millisecond),
 		maxInterval:         float64(time.Minute),
 		multiplier:          2,
-		randomizationFactor: 0.5,
+		randomizationFactor: 0.2,
 		retryCount:          0,
 	}
 
