@@ -2,7 +2,6 @@ package guard
 
 import (
 	"math/rand"
-	"sync/atomic"
 	"time"
 )
 
@@ -91,7 +90,6 @@ func ExponentialBackoff(options ...ExponentialBackoffOption) BackoffStrategy {
 		maxInterval:         float64(time.Minute),
 		multiplier:          2,
 		randomizationFactor: 0.2,
-		retryCount:          0,
 	}
 
 	for _, o := range options {
@@ -101,6 +99,7 @@ func ExponentialBackoff(options ...ExponentialBackoffOption) BackoffStrategy {
 	if e.randomizer == nil {
 		e.randomizer = rand.New(rand.NewSource(time.Now().Unix()))
 	}
+	e.baseInterval = e.initialInterval
 
 	return e
 }
@@ -111,22 +110,16 @@ type exponentialBackoff struct {
 	multiplier          float64
 	randomizationFactor float64
 	randomizer          Randomizer
-	retryCount          int64
+	baseInterval        float64
 }
 
 func (e *exponentialBackoff) NextInterval() time.Duration {
-	n := e.retryCount
-
-	interval := e.initialInterval
-	for i := int64(0); i < n; i++ {
-		interval *= e.multiplier
-	}
+	interval := e.baseInterval
 
 	if interval > e.maxInterval {
 		interval = e.maxInterval
-	} else {
-		atomic.CompareAndSwapInt64(&e.retryCount, n, n+1)
 	}
+	e.baseInterval = interval * e.multiplier
 
 	rnd := (1 - e.randomizationFactor) + (2 * e.randomizationFactor * e.randomizer.Float64())
 	nextBackoff := time.Duration(interval * rnd)
@@ -136,7 +129,7 @@ func (e *exponentialBackoff) NextInterval() time.Duration {
 
 func (e *exponentialBackoff) Reset() BackoffStrategy {
 	clone := *e
-	clone.retryCount = 0
+	clone.baseInterval = clone.initialInterval
 	return &clone
 }
 
