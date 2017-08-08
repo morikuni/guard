@@ -55,6 +55,7 @@ func (n noBackoff) Reset() BackoffStrategy {
 //
 //  NextInterval(N) = BaseInterval(N) * [1-RandomizationFactor, 1+RandomizationFactor)
 //  BaseInterval(N) = min(BaseInterval(N-1) * Multiplier, MaxInterval)
+//  BaseInterval(1) = min(InitialInterval, MaxInterval)
 //
 // The default parameters.
 //
