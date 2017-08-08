@@ -2,10 +2,13 @@ package guard
 
 import (
 	"context"
+	"time"
 )
 
-func Retry(n int) Guard {
+func Retry(n int, backoffStrategy BackoffStrategy) Guard {
 	return GuardFunc(func(ctx context.Context, f func(context.Context) error) error {
+		backoff := backoffStrategy.Reset()
+
 		var err error
 		for i := 0; i < n; i++ {
 			select {
@@ -17,6 +20,7 @@ func Retry(n int) Guard {
 			if err == nil {
 				return nil
 			}
+			time.Sleep(backoff.NextInterval())
 		}
 		return err
 	})
