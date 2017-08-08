@@ -11,38 +11,38 @@ type BackoffStrategy interface {
 	Reset() BackoffStrategy
 }
 
-func NewConstantBackoff(d time.Duration) BackoffStrategy {
-	return &ConstantBackoff{d}
+func ConstantBackoff(d time.Duration) BackoffStrategy {
+	return &constantBackoff{d}
 }
 
-type ConstantBackoff struct {
+type constantBackoff struct {
 	Interval time.Duration
 }
 
-func (c *ConstantBackoff) NextInterval() time.Duration {
+func (c *constantBackoff) NextInterval() time.Duration {
 	return c.Interval
 }
 
-func (c *ConstantBackoff) Reset() BackoffStrategy {
+func (c *constantBackoff) Reset() BackoffStrategy {
 	return c
 }
 
-func NewNoBackoff() BackoffStrategy {
-	return NoBackoff{}
+func NoBackoff() BackoffStrategy {
+	return noBackoff{}
 }
 
-type NoBackoff struct{}
+type noBackoff struct{}
 
-func (n NoBackoff) NextInterval() time.Duration {
+func (n noBackoff) NextInterval() time.Duration {
 	return 0
 }
 
-func (n NoBackoff) Reset() BackoffStrategy {
+func (n noBackoff) Reset() BackoffStrategy {
 	return n
 }
 
-func NewExponentialBackoff(options ...ExponentialBackoffOption) BackoffStrategy {
-	e := &ExponentialBackoff{
+func ExponentialBackoff(options ...ExponentialBackoffOption) BackoffStrategy {
+	e := &exponentialBackoff{
 		initialInterval:     float64(time.Second),
 		maxInterval:         float64(time.Minute),
 		multiplier:          2,
@@ -61,7 +61,7 @@ func NewExponentialBackoff(options ...ExponentialBackoffOption) BackoffStrategy 
 	return e
 }
 
-type ExponentialBackoff struct {
+type exponentialBackoff struct {
 	initialInterval     float64
 	maxInterval         float64
 	multiplier          float64
@@ -70,7 +70,7 @@ type ExponentialBackoff struct {
 	retryCount          int64
 }
 
-func (e *ExponentialBackoff) NextInterval() time.Duration {
+func (e *exponentialBackoff) NextInterval() time.Duration {
 	n := e.retryCount
 
 	interval := e.initialInterval
@@ -90,40 +90,40 @@ func (e *ExponentialBackoff) NextInterval() time.Duration {
 	return nextBackoff
 }
 
-func (e *ExponentialBackoff) Reset() BackoffStrategy {
+func (e *exponentialBackoff) Reset() BackoffStrategy {
 	clone := *e
 	clone.retryCount = 0
 	return &clone
 }
 
-type ExponentialBackoffOption func(*ExponentialBackoff)
+type ExponentialBackoffOption func(*exponentialBackoff)
 
 func WithInitialInterval(d time.Duration) ExponentialBackoffOption {
-	return ExponentialBackoffOption(func(e *ExponentialBackoff) {
+	return ExponentialBackoffOption(func(e *exponentialBackoff) {
 		e.initialInterval = float64(d)
 	})
 }
 
 func WithMaxInterval(d time.Duration) ExponentialBackoffOption {
-	return ExponentialBackoffOption(func(e *ExponentialBackoff) {
+	return ExponentialBackoffOption(func(e *exponentialBackoff) {
 		e.maxInterval = float64(d)
 	})
 }
 
 func WithMultiplier(f float64) ExponentialBackoffOption {
-	return ExponentialBackoffOption(func(e *ExponentialBackoff) {
+	return ExponentialBackoffOption(func(e *exponentialBackoff) {
 		e.multiplier = f
 	})
 }
 
 func WithRandomizationFactor(f float64) ExponentialBackoffOption {
-	return ExponentialBackoffOption(func(e *ExponentialBackoff) {
+	return ExponentialBackoffOption(func(e *exponentialBackoff) {
 		e.randomizationFactor = f
 	})
 }
 
 func WithRandomizer(r Randomizer) ExponentialBackoffOption {
-	return ExponentialBackoffOption(func(e *ExponentialBackoff) {
+	return ExponentialBackoffOption(func(e *exponentialBackoff) {
 		e.randomizer = r
 	})
 }
