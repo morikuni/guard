@@ -6,11 +6,17 @@ import (
 	"time"
 )
 
+// BackoffStrategy is a backoff strategy.
 type BackoffStrategy interface {
+	// NextInterval returns the next interval.
 	NextInterval() time.Duration
+
+	// Reset creates the clone of the current strategy with initialized state.
 	Reset() BackoffStrategy
 }
 
+// ConstantBackoff creates BackoffStrategy with constant interval.
+// NextInterval() always returns given parameter d.
 func ConstantBackoff(d time.Duration) BackoffStrategy {
 	return &constantBackoff{d}
 }
@@ -27,6 +33,8 @@ func (c *constantBackoff) Reset() BackoffStrategy {
 	return c
 }
 
+// NoBackoff creates BackoffStrategy without interval.
+// NextInterval() always returns 0.
 func NoBackoff() BackoffStrategy {
 	return noBackoff{}
 }
@@ -41,6 +49,41 @@ func (n noBackoff) Reset() BackoffStrategy {
 	return n
 }
 
+// ExponentialBackoff creates BackoffStrategy with exponential backoff.
+//
+// Let N be a retry count of the process, the value of NextInterval(N) is calculated by following formula.
+//
+//  NextInterval(N) = BaseInterval(N) * [1-RandomizationFactor, 1+RandomizationFactor)
+//  BaseInterval(N) = min(BaseInterval(N-1) * Multiplier, MaxInterval)
+//
+// The default parameters.
+//
+//  InitialInterval:     200 (ms)
+//  MaxInterval:         1 (min)
+//  Multiplier:          2
+//  RandomizationFactor: 0.2
+//  Randomizer:          rand.New(rand.NewSource(time.Now().Unix()))
+//
+// Example intervals.
+//
+//  +----+----------------------+----------------------+
+//  | N  | BaseInterval(N) (ms) | NextInterval(N) (ms) |
+//  +----+----------------------+----------------------+
+//  |  1 |                  200 | [160, 240)           |
+//  |  2 |                  400 | [320, 480)           |
+//  |  3 |                  800 | [640, 960)           |
+//  |  4 |                 1600 | [1280, 1920)         |
+//  |  5 |                 3200 | [2560, 3840)         |
+//  |  6 |                 6400 | [5120, 7680)         |
+//  |  7 |                12800 | [10240, 15360)       |
+//  |  8 |                25600 | [20480, 30720)       |
+//  |  9 |                51200 | [40960, 61440)       |
+//  | 10 |                60000 | [48000, 72000)       |
+//  | 11 |                60000 | [48000, 72000)       |
+//  +----+----------------------+----------------------+
+//
+// Note: MaxInterval effects only the base interval.
+// The actual interval may exceed MaxInterval depengind on RandomizationFactor.
 func ExponentialBackoff(options ...ExponentialBackoffOption) BackoffStrategy {
 	e := &exponentialBackoff{
 		initialInterval:     float64(200 * time.Millisecond),
@@ -96,32 +139,38 @@ func (e *exponentialBackoff) Reset() BackoffStrategy {
 	return &clone
 }
 
+// ExponentialBackoffOption is the optional parameter for ExponentialBackoff.
 type ExponentialBackoffOption func(*exponentialBackoff)
 
+// WithInitialInterval set the initial interval of ExponentialBackoff.
 func WithInitialInterval(d time.Duration) ExponentialBackoffOption {
 	return ExponentialBackoffOption(func(e *exponentialBackoff) {
 		e.initialInterval = float64(d)
 	})
 }
 
+// WithMaxInterval set the maximum interval of ExponentialBackoff.
 func WithMaxInterval(d time.Duration) ExponentialBackoffOption {
 	return ExponentialBackoffOption(func(e *exponentialBackoff) {
 		e.maxInterval = float64(d)
 	})
 }
 
+// WithMultiplier set the multiplier of ExponentialBackoff.
 func WithMultiplier(f float64) ExponentialBackoffOption {
 	return ExponentialBackoffOption(func(e *exponentialBackoff) {
 		e.multiplier = f
 	})
 }
 
+// WithRandomizationFactor set the randomization factor of ExponentialBackoff.
 func WithRandomizationFactor(f float64) ExponentialBackoffOption {
 	return ExponentialBackoffOption(func(e *exponentialBackoff) {
 		e.randomizationFactor = f
 	})
 }
 
+// WithRandomizer set the randomizer of ExponentialBackoff.
 func WithRandomizer(r Randomizer) ExponentialBackoffOption {
 	return ExponentialBackoffOption(func(e *exponentialBackoff) {
 		e.randomizer = r
