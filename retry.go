@@ -10,7 +10,7 @@ func Retry(n int, backoffStrategy BackoffStrategy) Guard {
 		backoff := backoffStrategy.Reset()
 
 		var err error
-		for i := 0; i < n; i++ {
+		for i := 0; i <= n; i++ {
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
