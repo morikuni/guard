@@ -129,11 +129,12 @@ func (e *exponentialBackoff) BaseInterval() float64 {
 	for {
 		old := atomic.LoadUint64(&e.baseInterval)
 		baseInterval := math.Float64frombits(old)
+		new := baseInterval * e.multiplier
 
-		if baseInterval > e.maxInterval {
-			baseInterval = e.maxInterval
+		if new > e.maxInterval {
+			new = e.maxInterval
 		}
-		if atomic.CompareAndSwapUint64(&e.baseInterval, old, math.Float64bits(baseInterval*e.multiplier)) {
+		if atomic.CompareAndSwapUint64(&e.baseInterval, old, math.Float64bits(new)) {
 			return baseInterval
 		}
 	}
