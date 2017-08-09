@@ -12,10 +12,12 @@ func Retry(n int, backoffStrategy BackoffStrategy) Guard {
 		var err error
 		for i := 0; i <= n; i++ {
 			if i > 0 {
+				t := time.NewTimer(backoff.NextInterval())
+				defer t.Stop()
 				select {
 				case <-ctx.Done():
 					return ctx.Err()
-				case <-time.NewTimer(backoff.NextInterval()).C:
+				case <-t.C:
 				}
 			}
 
