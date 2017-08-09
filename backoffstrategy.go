@@ -1,7 +1,9 @@
 package guard
 
 import (
+	"math"
 	"math/rand"
+	"sync/atomic"
 	"time"
 )
 
@@ -99,7 +101,7 @@ func ExponentialBackoff(options ...ExponentialBackoffOption) BackoffStrategy {
 	if e.randomizer == nil {
 		e.randomizer = rand.New(rand.NewSource(time.Now().Unix()))
 	}
-	e.baseInterval = e.initialInterval
+	e.baseInterval = math.Float64bits(e.initialInterval)
 
 	return e
 }
@@ -110,26 +112,33 @@ type exponentialBackoff struct {
 	multiplier          float64
 	randomizationFactor float64
 	randomizer          Randomizer
-	baseInterval        float64
+
+	baseInterval uint64 // baseInterval actually represents float64. use uint64 for CompareAndSwap.
 }
 
 func (e *exponentialBackoff) NextInterval() time.Duration {
-	interval := e.baseInterval
+	var baseInterval float64
+	for {
+		old := atomic.LoadUint64(&e.baseInterval)
+		baseInterval = math.Float64frombits(old)
 
-	if interval > e.maxInterval {
-		interval = e.maxInterval
+		if baseInterval > e.maxInterval {
+			baseInterval = e.maxInterval
+		}
+		if atomic.CompareAndSwapUint64(&e.baseInterval, old, math.Float64bits(baseInterval*e.multiplier)) {
+			break
+		}
 	}
-	e.baseInterval = interval * e.multiplier
 
 	rnd := (1 - e.randomizationFactor) + (2 * e.randomizationFactor * e.randomizer.Float64())
-	nextBackoff := time.Duration(interval * rnd)
+	nextBackoff := time.Duration(baseInterval * rnd)
 
 	return nextBackoff
 }
 
 func (e *exponentialBackoff) Reset() BackoffStrategy {
 	clone := *e
-	clone.baseInterval = clone.initialInterval
+	clone.baseInterval = math.Float64bits(clone.initialInterval)
 	return &clone
 }
 
