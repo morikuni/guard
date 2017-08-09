@@ -117,23 +117,26 @@ type exponentialBackoff struct {
 }
 
 func (e *exponentialBackoff) NextInterval() time.Duration {
-	var baseInterval float64
-	for {
-		old := atomic.LoadUint64(&e.baseInterval)
-		baseInterval = math.Float64frombits(old)
-
-		if baseInterval > e.maxInterval {
-			baseInterval = e.maxInterval
-		}
-		if atomic.CompareAndSwapUint64(&e.baseInterval, old, math.Float64bits(baseInterval*e.multiplier)) {
-			break
-		}
-	}
+	baseInterval := e.BaseInterval()
 
 	rnd := (1 - e.randomizationFactor) + (2 * e.randomizationFactor * e.randomizer.Float64())
 	nextBackoff := time.Duration(baseInterval * rnd)
 
 	return nextBackoff
+}
+
+func (e *exponentialBackoff) BaseInterval() float64 {
+	for {
+		old := atomic.LoadUint64(&e.baseInterval)
+		baseInterval := math.Float64frombits(old)
+
+		if baseInterval > e.maxInterval {
+			baseInterval = e.maxInterval
+		}
+		if atomic.CompareAndSwapUint64(&e.baseInterval, old, math.Float64bits(baseInterval*e.multiplier)) {
+			return baseInterval
+		}
+	}
 }
 
 func (e *exponentialBackoff) Reset() BackoffStrategy {
