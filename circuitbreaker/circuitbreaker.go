@@ -97,10 +97,7 @@ func (cb *circuitBreaker) change(from, to int32) bool {
 
 func (cb *circuitBreaker) open(state int32) {
 	if cb.change(state, open) {
-		i := cb.backoff.NextInterval()
-		println("open", i.Nanoseconds())
-		time.AfterFunc(i, func() {
-			println("halfopen")
+		time.AfterFunc(cb.backoff.NextInterval(), func() {
 			cb.change(open, halfopen)
 		})
 	}
@@ -108,7 +105,6 @@ func (cb *circuitBreaker) open(state int32) {
 
 func (cb *circuitBreaker) close(state int32) {
 	if cb.change(state, close) {
-		println("close")
 		cb.backoff = cb.backoff.Reset()
 		cb.window.Reset()
 	}
