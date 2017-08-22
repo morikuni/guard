@@ -3,19 +3,30 @@ package circuitbreaker
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/morikuni/guard"
 )
 
-func New(window Window, threashold float64, backoff guard.Backoff) guard.Guard {
+type CircuitBreaker interface {
+	guard.Guard
+
+	Subscribe() <-chan StateChange
+}
+
+func New(window Window, threashold float64, backoff guard.Backoff) CircuitBreaker {
 	window.Reset()
 	cb := &circuitBreaker{
 		window,
 		threashold,
 		close,
 		backoff.Reset(),
+
+		[]chan<- StateChange{},
+		sync.RWMutex{},
 	}
 	return cb
 }
@@ -33,6 +44,9 @@ type circuitBreaker struct {
 	threashold float64
 	state      int32
 	backoff    guard.Backoff
+
+	subscribers []chan<- StateChange
+	mu          sync.RWMutex
 }
 
 func (cb *circuitBreaker) Call(ctx context.Context, f func(context.Context) error) error {
@@ -59,7 +73,7 @@ func (cb *circuitBreaker) succeed(state int32) {
 	switch state {
 	case close:
 	case halfopen:
-		cb.close(state)
+		cb.close()
 	default:
 		panic("never come here")
 	}
@@ -91,21 +105,70 @@ func (cb *circuitBreaker) currentState() (state int32, available bool) {
 	panic("never come here")
 }
 
-func (cb *circuitBreaker) change(from, to int32) bool {
-	return atomic.CompareAndSwapInt32(&cb.state, from, to)
+func (cb *circuitBreaker) change(from, to int32, sc StateChange) bool {
+	ok := atomic.CompareAndSwapInt32(&cb.state, from, to)
+	if ok {
+		cb.notify(sc)
+	}
+	return ok
 }
 
 func (cb *circuitBreaker) open(state int32) {
-	if cb.change(state, open) {
+	sc := CloseToOpen
+	if state == halfopen {
+		sc = HalfOpenToOpen
+	}
+	if cb.change(state, open, sc) {
 		time.AfterFunc(cb.backoff.NextInterval(), func() {
-			cb.change(open, halfopen)
+			cb.change(open, halfopen, OpenToHalfOpen)
 		})
 	}
 }
 
-func (cb *circuitBreaker) close(state int32) {
-	if cb.change(state, close) {
+func (cb *circuitBreaker) close() {
+	if cb.change(halfopen, close, HalfOpenToClose) {
 		cb.backoff = cb.backoff.Reset()
 		cb.window.Reset()
+	}
+}
+
+func (cb *circuitBreaker) Subscribe() <-chan StateChange {
+	c := make(chan StateChange, 100)
+
+	cb.mu.Lock()
+	defer cb.mu.Unlock()
+	cb.subscribers = append(cb.subscribers, c)
+	return c
+}
+
+func (cb *circuitBreaker) notify(sc StateChange) {
+	cb.mu.RLock()
+	defer cb.mu.RUnlock()
+	for _, subscriber := range cb.subscribers {
+		subscriber <- sc
+	}
+}
+
+type StateChange int
+
+const (
+	CloseToOpen StateChange = iota
+	HalfOpenToOpen
+	HalfOpenToClose
+	OpenToHalfOpen
+)
+
+func (sc StateChange) String() string {
+	switch sc {
+	case CloseToOpen:
+		return "close to open"
+	case HalfOpenToOpen:
+		return "half-open to open"
+	case HalfOpenToClose:
+		return "half-open to close"
+	case OpenToHalfOpen:
+		return "open to half-open"
+	default:
+		panic(fmt.Sprint("unknown state change", sc))
 	}
 }
