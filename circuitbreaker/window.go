@@ -11,7 +11,7 @@ type Window interface {
 	Reset()
 }
 
-type countBasedWindow struct {
+type countBaseWindow struct {
 	idx            int
 	failures       int
 	size           int
@@ -19,28 +19,28 @@ type countBasedWindow struct {
 	mu             sync.RWMutex
 }
 
-func CountWindow(size int) Window {
-	return &countBasedWindow{
+func NewCountBaseWindow(size int) Window {
+	return &countBaseWindow{
 		size:           size,
 		failureHistory: make([]bool, size),
 	}
 }
 
-func (w *countBasedWindow) FailureRate() float64 {
+func (w *countBaseWindow) FailureRate() float64 {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 	return float64(w.failures) / float64(w.size)
 }
 
-func (w *countBasedWindow) PutSuccess() {
+func (w *countBaseWindow) PutSuccess() {
 	w.put(false)
 }
 
-func (w *countBasedWindow) PutFailure() {
+func (w *countBaseWindow) PutFailure() {
 	w.put(true)
 }
 
-func (w *countBasedWindow) Reset() {
+func (w *countBaseWindow) Reset() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	for i := range w.failureHistory {
@@ -50,7 +50,7 @@ func (w *countBasedWindow) Reset() {
 	w.idx = 0
 }
 
-func (w *countBasedWindow) put(failure bool) {
+func (w *countBaseWindow) put(failure bool) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
