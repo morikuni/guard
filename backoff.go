@@ -7,18 +7,18 @@ import (
 	"time"
 )
 
-// BackoffStrategy is a backoff strategy.
-type BackoffStrategy interface {
+// Backoff is a strategy of backoff interval.
+type Backoff interface {
 	// NextInterval returns the next interval.
 	NextInterval() time.Duration
 
 	// Reset creates the clone of the current strategy with an initialized state.
-	Reset() BackoffStrategy
+	Reset() Backoff
 }
 
-// ConstantBackoff creates BackoffStrategy with a constant interval.
+// ConstantBackoff creates Backoff with a constant interval.
 // NextInterval() always returns given parameter d.
-func ConstantBackoff(d time.Duration) BackoffStrategy {
+func ConstantBackoff(d time.Duration) Backoff {
 	return &constantBackoff{d}
 }
 
@@ -30,13 +30,13 @@ func (c *constantBackoff) NextInterval() time.Duration {
 	return c.Interval
 }
 
-func (c *constantBackoff) Reset() BackoffStrategy {
+func (c *constantBackoff) Reset() Backoff {
 	return c
 }
 
-// NoBackoff creates BackoffStrategy without an interval.
+// NoBackoff creates Backoff without an interval.
 // NextInterval() always returns 0.
-func NoBackoff() BackoffStrategy {
+func NoBackoff() Backoff {
 	return noBackoff{}
 }
 
@@ -46,11 +46,11 @@ func (n noBackoff) NextInterval() time.Duration {
 	return 0
 }
 
-func (n noBackoff) Reset() BackoffStrategy {
+func (n noBackoff) Reset() Backoff {
 	return n
 }
 
-// ExponentialBackoff creates BackoffStrategy with an exponential backoff.
+// ExponentialBackoff creates Backoff with an exponential backoff.
 //
 // Let N be a retry count of the process, the value of NextInterval(N) is calculated by following formula.
 //
@@ -86,7 +86,7 @@ func (n noBackoff) Reset() BackoffStrategy {
 //
 // Note: MaxInterval effects only the base interval.
 // The actual interval may exceed MaxInterval depending on RandomizationFactor.
-func ExponentialBackoff(options ...ExponentialBackoffOption) BackoffStrategy {
+func ExponentialBackoff(options ...ExponentialBackoffOption) Backoff {
 	e := &exponentialBackoff{
 		initialInterval:     float64(200 * time.Millisecond),
 		maxInterval:         float64(time.Minute),
@@ -140,7 +140,7 @@ func (e *exponentialBackoff) BaseInterval() float64 {
 	}
 }
 
-func (e *exponentialBackoff) Reset() BackoffStrategy {
+func (e *exponentialBackoff) Reset() Backoff {
 	clone := *e
 	clone.baseInterval = math.Float64bits(clone.initialInterval)
 	return &clone

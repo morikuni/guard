@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func CircuitBreaker(window Window, threashold float64, backoff BackoffStrategy) Guard {
+func CircuitBreaker(window Window, threashold float64, backoff Backoff) Guard {
 	window.Reset()
 	cb := &circuitBreaker{
 		window,
@@ -30,7 +30,7 @@ type circuitBreaker struct {
 	window     Window
 	threashold float64
 	state      int32
-	backoff    BackoffStrategy
+	backoff    Backoff
 }
 
 func (cb *circuitBreaker) Call(ctx context.Context, f func(context.Context) error) error {

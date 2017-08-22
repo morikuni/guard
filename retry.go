@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func Retry(n int, backoffStrategy BackoffStrategy) Guard {
+func Retry(n int, backoffStrategy Backoff) Guard {
 	return GuardFunc(func(ctx context.Context, f func(context.Context) error) error {
 		backoff := backoffStrategy.Reset()
 
