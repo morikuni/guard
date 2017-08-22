@@ -18,7 +18,7 @@ type Backoff interface {
 
 // ConstantBackoff creates Backoff with a constant interval.
 // NextInterval() always returns given parameter d.
-func ConstantBackoff(d time.Duration) Backoff {
+func NewConstantBackoff(d time.Duration) Backoff {
 	return &constantBackoff{d}
 }
 
@@ -36,7 +36,7 @@ func (c *constantBackoff) Reset() Backoff {
 
 // NoBackoff creates Backoff without an interval.
 // NextInterval() always returns 0.
-func NoBackoff() Backoff {
+func NewNoBackoff() Backoff {
 	return noBackoff{}
 }
 
@@ -86,7 +86,7 @@ func (n noBackoff) Reset() Backoff {
 //
 // Note: MaxInterval effects only the base interval.
 // The actual interval may exceed MaxInterval depending on RandomizationFactor.
-func ExponentialBackoff(options ...ExponentialBackoffOption) Backoff {
+func NewExponentialBackoff(options ...ExponentialBackoffOption) Backoff {
 	e := &exponentialBackoff{
 		initialInterval:     float64(200 * time.Millisecond),
 		maxInterval:         float64(time.Minute),
