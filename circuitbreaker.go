@@ -57,9 +57,7 @@ func (cb *circuitBreaker) succeed(state int32) {
 	switch state {
 	case close:
 	case halfopen:
-		if cb.change(state, close) {
-			cb.backoff = cb.backoff.Reset()
-		}
+		cb.close(state)
 	default:
 		panic("never come here")
 	}
