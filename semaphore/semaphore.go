@@ -1,12 +1,14 @@
-package guard
+package semaphore
 
 import (
 	"context"
+
+	"github.com/morikuni/guard"
 )
 
-func Semaphore(n int) Guard {
+func New(n int) guard.Guard {
 	ch := make(chan struct{}, n)
-	return GuardFunc(func(ctx context.Context, f func(context.Context) error) error {
+	return guard.GuardFunc(func(ctx context.Context, f func(context.Context) error) error {
 		select {
 		case ch <- struct{}{}:
 			defer func() { <-ch }()

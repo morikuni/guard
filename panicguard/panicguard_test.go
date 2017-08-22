@@ -1,4 +1,4 @@
-package guard
+package panicguard
 
 import (
 	"context"

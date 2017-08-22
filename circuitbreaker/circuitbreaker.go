@@ -1,13 +1,15 @@
-package guard
+package circuitbreaker
 
 import (
 	"context"
 	"errors"
 	"sync/atomic"
 	"time"
+
+	"github.com/morikuni/guard"
 )
 
-func CircuitBreaker(window Window, threashold float64, backoff Backoff) Guard {
+func New(window Window, threashold float64, backoff guard.Backoff) guard.Guard {
 	window.Reset()
 	cb := &circuitBreaker{
 		window,
@@ -30,7 +32,7 @@ type circuitBreaker struct {
 	window     Window
 	threashold float64
 	state      int32
-	backoff    Backoff
+	backoff    guard.Backoff
 }
 
 func (cb *circuitBreaker) Call(ctx context.Context, f func(context.Context) error) error {
@@ -95,7 +97,10 @@ func (cb *circuitBreaker) change(from, to int32) bool {
 
 func (cb *circuitBreaker) open(state int32) {
 	if cb.change(state, open) {
-		time.AfterFunc(cb.backoff.NextInterval(), func() {
+		i := cb.backoff.NextInterval()
+		println("open", i.Nanoseconds())
+		time.AfterFunc(i, func() {
+			println("halfopen")
 			cb.change(open, halfopen)
 		})
 	}
@@ -103,6 +108,7 @@ func (cb *circuitBreaker) open(state int32) {
 
 func (cb *circuitBreaker) close(state int32) {
 	if cb.change(state, close) {
+		println("close")
 		cb.backoff = cb.backoff.Reset()
 		cb.window.Reset()
 	}

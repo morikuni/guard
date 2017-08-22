@@ -1,18 +1,20 @@
-package guard
+package retry
 
 import (
 	"context"
 	"time"
+
+	"github.com/morikuni/guard"
 )
 
-func Retry(n int, backoffStrategy Backoff) Guard {
-	return GuardFunc(func(ctx context.Context, f func(context.Context) error) error {
-		backoff := backoffStrategy.Reset()
+func New(n int, backoff guard.Backoff) guard.Guard {
+	return guard.GuardFunc(func(ctx context.Context, f func(context.Context) error) error {
+		bo := backoff.Reset()
 
 		var err error
 		for i := 0; i <= n; i++ {
 			if i > 0 {
-				t := time.NewTimer(backoff.NextInterval())
+				t := time.NewTimer(bo.NextInterval())
 				defer t.Stop()
 				select {
 				case <-ctx.Done():
