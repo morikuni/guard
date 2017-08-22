@@ -46,7 +46,7 @@ func (cb *circuitBreaker) Call(ctx context.Context, f func(context.Context) erro
 	case context.Canceled:
 		// this is normal, so do nothing.
 	default:
-		// context.DeadlimeExceeded and other errors are regarded as failure.
+		// context.DeadlimeExceeded and other errors are regarded as a failure.
 		cb.fail(state)
 	}
 	return err
@@ -97,7 +97,6 @@ func (cb *circuitBreaker) change(from, to int32) bool {
 
 func (cb *circuitBreaker) open(state int32) {
 	if cb.change(state, open) {
-		println("open")
 		time.AfterFunc(cb.backoff.NextInterval(), func() {
 			cb.change(open, halfopen)
 		})
