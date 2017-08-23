@@ -1,0 +1,14 @@
+language: go
+
+go:
+  - tip
+  - 1.8.x
+  - 1.7.x
+
+before_install:
+  - go get -u github.com/golang/dep/...
+
+install:
+  - dep ensure
+
+script: go test -v $(go list ./... | grep -v vendor)
