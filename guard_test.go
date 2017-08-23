@@ -35,7 +35,7 @@ func TestCompose(t *testing.T) {
 		assert.Equal([]int{1, 2, 3}, stack)
 	})
 
-	t.Run("error should be returned from Call method", func(t *testing.T) {
+	t.Run("error should be returned", func(t *testing.T) {
 		assert := assert.New(t)
 
 		g := Compose(testGuard{}, testGuard{}, testGuard{})
