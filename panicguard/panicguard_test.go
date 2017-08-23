@@ -9,7 +9,7 @@ import (
 )
 
 func TestPanic(t *testing.T) {
-	t.Run("error should be returned from Call method", func(t *testing.T) {
+	t.Run("error should be returned", func(t *testing.T) {
 		assert := assert.New(t)
 
 		g := New()
