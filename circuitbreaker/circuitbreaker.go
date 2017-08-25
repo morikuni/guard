@@ -169,6 +169,6 @@ func (sc StateChange) String() string {
 	case OpenToHalfOpen:
 		return "open to half-open"
 	default:
-		panic(fmt.Sprint("unknown state change", sc))
+		panic(fmt.Sprint("unknown state change", int(sc)))
 	}
 }
