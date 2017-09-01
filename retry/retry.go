@@ -11,12 +11,12 @@ var Inf int = -1
 
 func New(n int, backoff guard.Backoff) guard.Guard {
 	return guard.GuardFunc(func(ctx context.Context, f func(context.Context) error) error {
-		if f(ctx) == nil {
+		err := f(ctx)
+		if err == nil {
 			return nil
 		}
 
 		bo := backoff.Reset()
-		var err error
 		for i := 0; i < n || n < 0; i++ {
 			err = f(ctx)
 			if err == nil {
