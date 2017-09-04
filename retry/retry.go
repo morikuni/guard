@@ -1,3 +1,4 @@
+// Package retry provides a failure management with retry for the process.
 package retry
 
 import (
@@ -7,8 +8,10 @@ import (
 	"github.com/morikuni/guard"
 )
 
+// Inf represents inifinite number of retries.
 var Inf int = -1
 
+// New creates a new guard.Guard with retry capability.
 func New(n int, backoff guard.Backoff) guard.Guard {
 	return guard.GuardFunc(func(ctx context.Context, f func(context.Context) error) error {
 		err := f(ctx)

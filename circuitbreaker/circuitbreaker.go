@@ -1,3 +1,4 @@
+// Package circuitbreaker provide a circuitbreaker pattern failure management.
 package circuitbreaker
 
 import (
@@ -11,12 +12,16 @@ import (
 	"github.com/morikuni/guard"
 )
 
+// CircuitBreaker is a guard.Guard with an additional method.
 type CircuitBreaker interface {
 	guard.Guard
 
+	// Subscribe returns a channel that receives events of state change of
+	// the circuit breaker.
 	Subscribe() <-chan StateChange
 }
 
+// New creates a new guard.Guard with capability of circuit breaker.
 func New(window Window, threashold float64, backoff guard.Backoff) CircuitBreaker {
 	window.Reset()
 	cb := &circuitBreaker{
@@ -37,6 +42,7 @@ const (
 	open
 )
 
+// ErrCircuitBreakerOpen is a error that is returned when the circuit breaker is "open".
 var ErrCircuitBreakerOpen = errors.New("circuit breaker open")
 
 type circuitBreaker struct {
@@ -149,15 +155,21 @@ func (cb *circuitBreaker) notify(sc StateChange) {
 	}
 }
 
+// StateChange is an event that represents a state change of the circuit breaker.
 type StateChange int
 
 const (
+	// CloseToOpen is an event that state was changed from "close" to "open".
 	CloseToOpen StateChange = iota
+	// HalfOpenToOpen is an event that state was changed from "open" to "half-open".
 	HalfOpenToOpen
+	// HalfOpenToClose is an event that state was changed from "half-open" to "close".
 	HalfOpenToClose
+	// OpenToHalfOpen is an event that state was changed from "open" to "half-open".
 	OpenToHalfOpen
 )
 
+// String implements fmt.Stringer.
 func (sc StateChange) String() string {
 	switch sc {
 	case CloseToOpen:

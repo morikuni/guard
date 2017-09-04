@@ -4,10 +4,19 @@ import (
 	"sync"
 )
 
+// Window accumulate successes and failures for circuit breaker.
 type Window interface {
+	// FailureRate returns failure rate that is calculated by
+	// `failures / (successes + failures)`.
 	FailureRate() float64
+
+	// PutSuccess notify a success to the window.
 	PutSuccess()
+
+	// PutSuccess notify a failure to the window.
 	PutFailure()
+
+	// Reset resets the accumulated events.
 	Reset()
 }
 
@@ -19,6 +28,8 @@ type countBaseWindow struct {
 	mu             sync.RWMutex
 }
 
+// NewCountBaseWindow creates a Window that accumulates events up to given size.
+// The window is represented by a ring buffer, so old events are overwrited by new events.
 func NewCountBaseWindow(size int) Window {
 	return &countBaseWindow{
 		size:           size,
