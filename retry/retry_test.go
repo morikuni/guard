@@ -17,7 +17,7 @@ func TestRetry(t *testing.T) {
 
 		g := New(3, noBackoff)
 
-		err := g.Call(context.Background(), func(_ context.Context) error {
+		err := g.Run(context.Background(), func(_ context.Context) error {
 			return errors.New("test error")
 		})
 
@@ -31,7 +31,7 @@ func TestRetry(t *testing.T) {
 		g := New(n, noBackoff)
 
 		count := 0
-		g.Call(context.Background(), func(ctx context.Context) error {
+		g.Run(context.Background(), func(ctx context.Context) error {
 			count++
 			return errors.New("test error")
 		})
@@ -45,7 +45,7 @@ func TestRetry(t *testing.T) {
 		g := New(3, noBackoff)
 
 		count := 0
-		err := g.Call(context.Background(), func(ctx context.Context) error {
+		err := g.Run(context.Background(), func(ctx context.Context) error {
 			count++
 			if count == 2 {
 				return nil
@@ -66,7 +66,7 @@ func TestRetry(t *testing.T) {
 		defer cancel()
 
 		count := 0
-		err := g.Call(ctx, func(ctx context.Context) error {
+		err := g.Run(ctx, func(ctx context.Context) error {
 			count++
 			if count == 2 {
 				cancel()

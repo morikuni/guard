@@ -25,7 +25,7 @@ func BenchmarkRetry(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		g.Call(context.Background(), func(ctx context.Context) error {
+		g.Run(context.Background(), func(ctx context.Context) error {
 			return nil
 		})
 	}
@@ -36,7 +36,7 @@ func BenchmarkPanicguard(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		g.Call(context.Background(), func(ctx context.Context) error {
+		g.Run(context.Background(), func(ctx context.Context) error {
 			return nil
 		})
 	}
@@ -47,7 +47,7 @@ func BenchmarkSemaphore(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		g.Call(context.Background(), func(ctx context.Context) error {
+		g.Run(context.Background(), func(ctx context.Context) error {
 			return nil
 		})
 	}
@@ -59,7 +59,7 @@ func BenchmarkCircuitBreaker(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		g.Call(context.Background(), func(ctx context.Context) error {
+		g.Run(context.Background(), func(ctx context.Context) error {
 			return nil
 		})
 	}

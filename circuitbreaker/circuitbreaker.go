@@ -55,7 +55,7 @@ type circuitBreaker struct {
 	mu          sync.RWMutex
 }
 
-func (cb *circuitBreaker) Call(ctx context.Context, f func(context.Context) error) error {
+func (cb *circuitBreaker) Run(ctx context.Context, f func(context.Context) error) error {
 	state, available := cb.currentState()
 	if !available {
 		return ErrCircuitBreakerOpen

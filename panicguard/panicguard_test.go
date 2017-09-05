@@ -14,7 +14,7 @@ func TestPanic(t *testing.T) {
 
 		g := New()
 
-		err := g.Call(context.Background(), func(_ context.Context) error {
+		err := g.Run(context.Background(), func(_ context.Context) error {
 			return errors.New("test error")
 		})
 
@@ -26,7 +26,7 @@ func TestPanic(t *testing.T) {
 
 		g := New()
 
-		err := g.Call(context.Background(), func(ctx context.Context) error {
+		err := g.Run(context.Background(), func(ctx context.Context) error {
 			panic("test error")
 		})
 

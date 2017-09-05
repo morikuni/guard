@@ -13,7 +13,7 @@ type testGuard struct {
 	ID        int
 }
 
-func (g testGuard) Call(ctx context.Context, f func(context.Context) error) error {
+func (g testGuard) Run(ctx context.Context, f func(context.Context) error) error {
 	if g.CallStack != nil {
 		*g.CallStack = append(*g.CallStack, g.ID)
 	}
@@ -27,7 +27,7 @@ func TestCompose(t *testing.T) {
 		stack := []int{}
 		g := Compose(testGuard{&stack, 1}, testGuard{&stack, 2}, testGuard{&stack, 3})
 
-		err := g.Call(context.Background(), func(_ context.Context) error {
+		err := g.Run(context.Background(), func(_ context.Context) error {
 			return nil
 		})
 
@@ -40,7 +40,7 @@ func TestCompose(t *testing.T) {
 
 		g := Compose(testGuard{}, testGuard{}, testGuard{})
 
-		err := g.Call(context.Background(), func(_ context.Context) error {
+		err := g.Run(context.Background(), func(_ context.Context) error {
 			return errors.New("test error")
 		})
 
@@ -53,7 +53,7 @@ func TestCompose(t *testing.T) {
 		g := Compose(testGuard{}, testGuard{}, testGuard{})
 
 		ctx := context.WithValue(context.Background(), "aaa", "bbb")
-		err := g.Call(ctx, func(ctx context.Context) error {
+		err := g.Run(ctx, func(ctx context.Context) error {
 			assert.Equal("bbb", ctx.Value("aaa"))
 			return nil
 		})

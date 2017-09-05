@@ -16,7 +16,7 @@ func TestSemaphore(t *testing.T) {
 
 		g := New(3)
 
-		err := g.Call(context.Background(), func(_ context.Context) error {
+		err := g.Run(context.Background(), func(_ context.Context) error {
 			return errors.New("test error")
 		})
 
@@ -31,7 +31,7 @@ func TestSemaphore(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		err := g.Call(ctx, func(ctx context.Context) error {
+		err := g.Run(ctx, func(ctx context.Context) error {
 			return errors.New("test error")
 		})
 
@@ -49,7 +49,7 @@ func TestSemaphore(t *testing.T) {
 
 		var count int32 = 0
 		for i := 0; i < 10; i++ {
-			go g.Call(ctx, func(ctx context.Context) error {
+			go g.Run(ctx, func(ctx context.Context) error {
 				atomic.AddInt32(&count, 1)
 				<-ctx.Done()
 				return nil

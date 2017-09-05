@@ -5,17 +5,17 @@ import (
 	"context"
 )
 
-// Guard is a process manager that calls and manages a function.
+// Guard is a process manager that runs and manages the process.
 type Guard interface {
-	// Call calls function and manage it.
-	Call(ctx context.Context, f func(context.Context) error) error
+	// Run runs the function with its own capability.
+	Run(ctx context.Context, f func(context.Context) error) error
 }
 
 // GuardFunc is an adapter to use a function as Guard.
 type GuardFunc func(ctx context.Context, f func(context.Context) error) error
 
-// Call implements Guard.
-func (g GuardFunc) Call(ctx context.Context, f func(context.Context) error) error {
+// Run implements Guard.
+func (g GuardFunc) Run(ctx context.Context, f func(context.Context) error) error {
 	return g(ctx, f)
 }
 
@@ -30,7 +30,7 @@ func Compose(guards ...Guard) Guard {
 		head := guards[0]
 		tail := Compose(guards[1:]...)
 		return GuardFunc(func(ctx context.Context, f func(context.Context) error) error {
-			return head.Call(ctx, func(ctx2 context.Context) error { return tail.Call(ctx2, f) })
+			return head.Run(ctx, func(ctx2 context.Context) error { return tail.Run(ctx2, f) })
 		})
 	}
 }
