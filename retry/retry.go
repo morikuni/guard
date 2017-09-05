@@ -21,19 +21,27 @@ func New(n int, backoff guard.Backoff) guard.Guard {
 
 		bo := backoff.Reset()
 		for i := 0; i < n || n < 0; i++ {
+			err := sleep(ctx, bo.NextInterval())
+			if err != nil {
+				return err
+			}
+
 			err = f(ctx)
 			if err == nil {
 				return nil
 			}
-
-			t := time.NewTimer(bo.NextInterval())
-			defer t.Stop()
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case <-t.C:
-			}
 		}
 		return err
 	})
+}
+
+func sleep(ctx context.Context, d time.Duration) error {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-t.C:
+		return nil
+	}
 }
