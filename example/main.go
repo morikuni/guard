@@ -24,21 +24,21 @@ func main() {
 		guard.WithMultiplier(2),
 		guard.WithRandomizationFactor(0),
 	)
-	window := circuitbreaker.NewCountBaseWindow(3)
+	window := circuitbreaker.NewTimeBaseWindow(time.Minute, time.Second)
 	cb := circuitbreaker.New(window, 0.5, backoff)
 	g := guard.Compose(
-		ratelimit.New(rate.NewLimiter(rate.Every(2*time.Second), 1)),
+		ratelimit.New(rate.NewLimiter(rate.Every(time.Second/100), 500)),
 		retry.New(25, guard.NewConstantBackoff(100*time.Millisecond)),
-		semaphore.New(100),
 		cb,
+		semaphore.New(100),
 		panicguard.New(),
 	)
 
-	// go func() {
-	// 	for event := range cb.Subscribe() {
-	// 		fmt.Println(event)
-	// 	}
-	// }()
+	go func() {
+		for event := range cb.Subscribe() {
+			fmt.Println(event)
+		}
+	}()
 
 	for i := 0; i < 10; i++ {
 		x := i

@@ -3,6 +3,7 @@ package benchmark
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/morikuni/guard"
 	"github.com/morikuni/guard/circuitbreaker"
@@ -81,4 +82,27 @@ func BenchmarkCircuitBreaker(b *testing.B) {
 		}
 	})
 }
+
+func BenchmarkCountBaseWindow(b *testing.B) {
+	window := circuitbreaker.NewCountBaseWindow(100)
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			window.PutFailure()
+			window.PutSuccess()
+			window.FailureRate()
+		}
+	})
+}
+
+func BenchmarkTimeBaseWindow(b *testing.B) {
+	window := circuitbreaker.NewTimeBaseWindow(time.Minute, time.Millisecond*100)
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			window.PutFailure()
+			window.PutSuccess()
+			window.FailureRate()
+		}
+	})
 }
