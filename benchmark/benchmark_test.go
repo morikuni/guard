@@ -81,4 +81,3 @@ func BenchmarkCircuitBreaker(b *testing.B) {
 		}
 	})
 }
-}
