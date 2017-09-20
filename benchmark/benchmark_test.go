@@ -12,55 +12,73 @@ import (
 )
 
 func BenchmarkBase(b *testing.B) {
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		func(ctx context.Context) error {
-			return nil
-		}(context.Background())
-	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			func(ctx context.Context) error {
+				return nil
+			}(context.Background())
+		}
+	})
 }
 
 func BenchmarkRetry(b *testing.B) {
 	g := retry.New(retry.Inf, guard.NewNoBackoff())
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		g.Run(context.Background(), func(ctx context.Context) error {
-			return nil
-		})
-	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			g.Run(context.Background(), func(ctx context.Context) error {
+				return nil
+			})
+		}
+	})
 }
 
 func BenchmarkPanicguard(b *testing.B) {
 	g := panicguard.New()
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		g.Run(context.Background(), func(ctx context.Context) error {
-			return nil
+	b.Run("without panic", func(b *testing.B) {
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				g.Run(context.Background(), func(ctx context.Context) error {
+					return nil
+				})
+			}
 		})
-	}
+	})
+
+	b.Run("with panic", func(b *testing.B) {
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				g.Run(context.Background(), func(ctx context.Context) error {
+					panic("hello")
+				})
+			}
+		})
+	})
 }
 
 func BenchmarkSemaphore(b *testing.B) {
-	g := semaphore.New(3)
+	g := semaphore.New(100)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		g.Run(context.Background(), func(ctx context.Context) error {
-			return nil
-		})
-	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			g.Run(context.Background(), func(ctx context.Context) error {
+				return nil
+			})
+		}
+	})
 }
 
 func BenchmarkCircuitBreaker(b *testing.B) {
 	window := circuitbreaker.NewCountBaseWindow(100)
 	g := circuitbreaker.New(window, 0.2, guard.NewNoBackoff())
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		g.Run(context.Background(), func(ctx context.Context) error {
-			return nil
-		})
-	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			g.Run(context.Background(), func(ctx context.Context) error {
+				return nil
+			})
+		}
+	})
+}
 }
